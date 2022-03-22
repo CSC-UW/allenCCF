@@ -1,9 +1,12 @@
-function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table, plane)
+function [borders_table, t, distThisToNearest] = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table, plane)
 
-
+% reference probe length
 % these are the query points along the probe tract
 yc = 10*[0:(rpl + probage_past_tip_to_plot*100 )] - 0;
+% distances in microns, starting at 0, every 100um along the track to plot (i.e. actual track
+% + extra padding). In reference space, but units are in microns.  
 t = yc/10; % dividing by 10 accounts for the 10um resolution of the atlas
+% t: total length (in reference space) of track to plot 
 % select the plane for the viewer
 if strcmp(plane,'coronal')
     m = m;
@@ -19,7 +22,7 @@ end
 x = m(1)+p(1)*t;
 y = m(2)+p(2)*t;
 z = m(3)+p(3)*t;
-
+% x, y, z = coordinates, in reference space, of tip of padded track. 
 
 ortho_plane = null(p);
 
@@ -212,11 +215,15 @@ if show_region_table && ann_type==1
      'VariableNames', {'upperBorder', 'lowerBorder', 'acronym', 'name', 'avIndex'})
 end
 
+if ann_type == 1
+    distThisToNearest = otherDist;
+end
+% if ann_type == 2
+%     distParentToNearest = otherDist;
+% end
 
 end
 
-
- 
 if strcmp(acr{end}, 'root')
     acr{end} = 'end';
 end
@@ -247,6 +254,19 @@ ylim([1 yc(end)+1])
 % plot line(s) indicating active site length
 plot([0 100], [(active_site_start*10) (active_site_start*10)], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
 plot([0 100], [(rpl)*10 (rpl)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+
+% parent_structure_ids = st.parent_structure_id(borders_table.avIndex);
+% nParentsUp = 1;
+% for i = 1:nParentsUp
+%     parent_structure_ids(parent_structure_ids == 0) = 1;
+%     for iStructure = 1:numel(parent_structure_ids)
+%         parent_id = parent_structure_ids(iStructure);
+%         parent_index = find(st.id == parent_id);
+%         borders_table.parent_name{iStructure} = st.safe_name{parent_index};
+%         borders_table.parent_acronym{iStructure} = st.acronym{parent_index};
+%         parent_structure_ids(iStructure) = st.parent_structure_id(parent_index);
+%     end
+% end
 
 box off;
 

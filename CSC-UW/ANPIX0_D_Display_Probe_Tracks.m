@@ -4,6 +4,10 @@
 
 %% ENTER PARAMETERS AND FILE LOCATION
 
+% output location of position data
+position_data_folder = 'W:\Data\acute\recovery_sleep\ANPIX0-Template\SHARP-Track_output';
+overwrite_existing_position_data = false;
+
 % file location of probe points
 processed_images_folder = 'W:\Data\acute\recovery_sleep\ANPIX0-Template\SHARP-Track_histology\processed';
 
@@ -21,15 +25,19 @@ probes_to_analyze = 'all';  % [1 2]
 % key parameters
 % --------------
 % how far into the brain did you go from the surface, either for each probe or just one number for all -- in mm
+% NOT in reference space
 probe_lengths = 4; 
 
 % from the bottom tip, how much of the probe contained recording sites -- in mm
+% NOT in reference space
 active_probe_length = 3.84;
 
 % distance queried for confidence metric -- in um
+% units (um) may not be correct?
 probe_radius = 100; 
 
 % overlay the distance between parent regions in gray (this takes a while)
+% YES in reference space
 show_parent_category = false; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
@@ -87,7 +95,8 @@ ProbeColors = .75*[1.3 1.3 1.3; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 .9;
 fwireframe = [];
 
 % scale active_probe_length appropriately
-active_probe_length = active_probe_length*100;
+% CSC-UW NOTE: This appears to be incorrect and should be commented out / removed? 
+% active_probe_length = active_probe_length*100;
 
 % determine which probes to analyze
 if strcmp(probes_to_analyze,'all')
@@ -183,6 +192,7 @@ if use_tip_to_get_reference_probe_length
     elseif strcmp(probe_insertion_direction, 'up')
         [depth, tip_index] = min(curr_probePoints(:,2));    
     end
+    % distance from deepest clicked point to estimated entry point
     reference_probe_length_tip = sqrt(sum((curr_probePoints(tip_index,:) - m).^2)); 
     
     % and the corresponding scaling factor
@@ -193,6 +203,10 @@ if use_tip_to_get_reference_probe_length
     disp(['probe scaling of ' num2str(shrinkage_factor)]); disp(' ');
     
     % plot line the length of the probe in reference space
+    % reference space: the space containing m (entry point) and
+    % curr_probePoints (clicked points), where unit-length is 10um. 
+    % reference space is the same as "reference atlas space" or "atlas
+    % space"?
     probe_length_histo = round(reference_probe_length_tip);
     
 % if scaling_factor is user-defined as some number, use it to plot the length of the probe
@@ -201,9 +215,10 @@ else
 end
 
 % find the percent of the probe occupied by electrodes
-percent_of_tract_with_active_sites = min([active_probe_length / (probe_length*100), 1.0]);
+percent_of_tract_with_active_sites = min([active_probe_length / (probe_length), 1.0]);
 active_site_start = probe_length_histo*(1-percent_of_tract_with_active_sites);
-active_probe_position = round([active_site_start  probe_length_histo]);
+active_probe_position = round([active_site_start  probe_length_histo]); % not actually a position until multiplied by p and added to m. 
+% represents length of p that can be used to determine tip and most superficial channel of the probe.  
 
 % plot line the length of the active probe sites in reference space
 plot3(m(1)+p(1)*[active_probe_position(1) active_probe_position(2)], m(3)+p(3)*[active_probe_position(1) active_probe_position(2)], m(2)+p(2)*[active_probe_position(1) active_probe_position(2)], ...
@@ -217,12 +232,32 @@ plot3(m(1)+p(1)*[1 probe_length_histo], m(3)+p(3)*[1 probe_length_histo], m(2)+p
 % Get and plot brain region labels along the extent of each probe
 % ----------------------------------------------------------------
 
-% convert error radius into mm
+% convert error radius into mm   
+% units (mm) may not be correct?
 error_length = round(probe_radius / 10);
 
 % find and regions the probe goes through, confidence in those regions, and plot them
-borders_table = plotDistToNearestToTip(m, p, av_plot, st, probe_length_histo, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table, plane); % plots confidence score based on distance to nearest region along probe
-title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
+[borders_table, query_points, distance_to_nearest] = plotDistToNearestToTip(m, p, av_plot, st, probe_length_histo, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table, plane); % plots confidence score based on distance to nearest region along probe
+% borders table * 10 = borders betwen major structures in um. Starts at 0
+% (surface) and goes to probe_length_histo + error_length. Includes
+% "pseudo-borders" for active site start and probe tip. Not especially
+% useful. 
 
+borders_table_json = jsonencode(borders_table);
+most_superficial_electrode = [m(1)+p(1)*active_probe_position(1) m(2)+p(2)*active_probe_position(1) m(3)+p(3)*active_probe_position(1)];
+deepest_electrode = [m(1)+p(1)*active_probe_position(2) m(2)+p(2)*active_probe_position(2) m(3)+p(3)*active_probe_position(2)];
+% With this information, you can calculate the coodinates of a channel that is X% of the way between the start and end of active sites, e.g.:
+% xyz_coords = most_superficial_electrode * (X/100) + deepest_electrode * (1 - X/100)
+
+mat_file = fullfile(position_data_folder, ['SHARP-Track.probe', num2str(selected_probe), '.mat']);
+if (~overwrite_existing_position_data) 
+    if isfile(mat_file)
+        warning("Refusing to overwrite existing files.")
+    else
+        save(mat_file, 'active_probe_length', 'active_site_start', 'borders_table_json', 'deepest_electrode', 'distance_past_tip_to_plot', 'distance_to_nearest', 'm', 'most_superficial_electrode', 'out_of_brain', 'p', 'probe_length', 'probe_length_histo', 'query_points', 'shrinkage_factor', '-v7.3')
+    end
+end
+
+title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 pause(.05)
 end
