@@ -1,5 +1,5 @@
 # allen CCF tools
-
+> [CSC-UW README](CSC-UW/README.md).
 Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version. See the Wiki for detailed instructions.
 
 
@@ -23,7 +23,7 @@ Plan neuropixels trajectories with an Allen CCF-based GUI
 
 >> allen_ccf_npx(tv,av,st);
 ```
-for 4-shank: 
+for 4-shank:
 ```
 >> allen_ccf_npx_4shank(tv,av,st);
 ```
