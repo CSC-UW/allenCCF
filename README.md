@@ -1,5 +1,6 @@
 # allen CCF tools
-> [CSC-UW README](CSC-UW/README.md).
+> ATTENTION CSC-UW USERS! See the [CSC-UW README](CSC-UW/README.md).
+> 
 Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version. See the Wiki for detailed instructions.
 
 
