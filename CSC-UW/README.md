@@ -14,5 +14,5 @@
     - `A-Process_Histology.m`: `image_folder`
     - `B-Register_Slices.m`: `processed_images_folder`, `annotation_volume_location`, `template_volume_location`, `structure_stree_location`
     - `C-Mark_Probes.m`: `processed_images_folder`, `annotation_volume_location`, `template_volume_location`, `structure_stree_location`
-    - `D-Display_Probe_Tracks.m`: `processed_images_folder`, `annotation_volume_location`, `structure_stree_location`
+    - `D-Display_Probe_Tracks.m`: `position_data_folder`, `processed_images_folder`, `annotation_volume_location`, `structure_stree_location`
 4. Run steps in order, per the [SHARP-Track Wiki](https://github.com/cortex-lab/allenCCF/wiki).
